@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
-from .carro import Carro
+from .carro import CarroCiclo
 from .dosificacion import Dispensador, dosificar
 from .pesaje import Balanza
 from .recetas import Estacion, Receta
@@ -39,7 +39,7 @@ class Controlador:
     def __init__(
         self,
         recipiente: SensorRecipiente,
-        carro: Carro,
+        carro: CarroCiclo,
         balanza: Balanza,
         dispensador: Dispensador,
         parametros: ParametrosCiclo,

@@ -7,12 +7,25 @@ from .simulacion import MaquinaSimulada
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Simulador de la dosificadora")
+    parser = argparse.ArgumentParser(description="Máquina dosificadora UKUMARI")
+    parser.add_argument("--gui", action="store_true", help="Abrir el panel Tkinter")
     parser.add_argument("--sabor", choices=RECETAS)
     fallas = parser.add_mutually_exclusive_group()
     fallas.add_argument("--sin-recipiente", action="store_true")
     fallas.add_argument("--fallo-estacion", action="store_true")
     args = parser.parse_args()
+
+    if args.gui:
+        if args.sabor or args.sin_recipiente or args.fallo_estacion:
+            parser.error("--gui se ejecuta sin opciones del simulador")
+        try:
+            from .interfaz_tk import main as abrir_panel
+
+            abrir_panel()
+        except ImportError:
+            print("El panel requiere Tkinter y pyserial. Consulta el README.", file=sys.stderr)
+            return 1
+        return 0
 
     sabor = args.sabor
     while sabor not in RECETAS:

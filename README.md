@@ -1,44 +1,46 @@
 # ProteinMachine_Ukumari
 
-Proyecto de graduación para el título de Ingeniero Generalista.
+Proyecto de graduación para el título de Ingeniero Generalista. Requiere Python 3.10 o posterior.
 
-Prototipo en Python para programar y probar el ciclo de la máquina expendedora de bebidas proteicas. Requiere Python 3.10 o posterior y usa la biblioteca estándar.
+## Abrir la interfaz UKUMARI
+
+Desde la carpeta del repositorio, instala pyserial y ejecuta el panel:
+
+```sh
+python -m pip install pyserial
+python -m dosificadora --gui
+```
+
+En Raspberry Pi OS, instala Tkinter con `sudo apt install python3-tk` si tu instalación de Python no lo incluye. Usa un entorno virtual para instalar pyserial. En Windows puedes usar `py` en lugar de `python`. Si colocas el archivo `logo.png` en tu carpeta de usuario, el panel lo muestra en el encabezado.
+
+La ventana de 800×480 abre en la vista Usuario sin conectarse al Arduino. Para operar la máquina, entra en **Admin** (PIN original `123`), selecciona el puerto y pulsa **Conectar**. La comunicación usa 115200 baudios y envía `INVERT` después de la espera de arranque del Arduino. Si la conexión se pierde, el panel reintenta en el puerto seleccionado. **Desconectar** cancela los reintentos.
+
+Los botones de proteína envían `RUN 4`, `RUN 3` o `RUN 2`. El firmware ejecuta la secuencia con agua en la estación 5, entrega en la 1 y retorno configurable a la 5. En Admin, **Probar Agua (6s)** envía `PUMP` una vez. El intervalo es responsabilidad del firmware. El panel refleja los mensajes recibidos y las lecturas IR de `SENS:` (estaciones 1 a 5 en el mensaje, 5 a 1 en pantalla).
 
 ## Ejecutar el simulador
 
-Desde la carpeta del repositorio (en Windows también se puede usar `py` en lugar de `python`):
+El simulador de terminal utiliza solo la biblioteca estándar. Ambos modos también se pueden iniciar desde el editor ejecutando directamente `dosificadora/__main__.py` con los argumentos correspondientes.
 
 ```sh
 python -m dosificadora
 python -m dosificadora --sabor chocolate
+python dosificadora/__main__.py --sabor chocolate
 python -m dosificadora --sabor chocolate --sin-recipiente
 python -m dosificadora --sabor chocolate --fallo-estacion
 python -m unittest discover -s tests -v
 ```
 
-## Flujo del primer ciclo
-
-[Consultar el diagrama original](docs/Diagrama_flujo.png).
-
-1. El usuario selecciona un sabor. El sistema confirma que el carro está en la estación de agua y espera la detección del recipiente con el sensor infrarrojo.
-2. Sirve el agua y comprueba por ganancia de masa que se alcanzó la dosis.
-3. Mueve el carro con el motor DC hacia la estación de polvo elegida. El carro debe estar detenido y su posición confirmada para habilitar la dosificación.
-4. Dosifica polvo por pulsos, con una referencia de masa tomada en la estación de polvo. Cada pulso termina con las salidas apagadas y se comprueba la ganancia de masa antes de continuar.
-5. Mueve el carro a entrega, confirma su llegada y muestra el resultado. Ante un error, el controlador solicita desactivar la dosificación y detener el carro.
-
-La simulación empieza con el carro en agua y termina tras un pedido. Vainilla, chocolate, 250 g de agua y 25 g de polvo son valores de prueba. Los plazos, tolerancias y tamaños de pulso del simulador requieren validación en banco. El programa usa una interfaz de terminal y un dispositivo simulado. Para la máquina física quedan pendientes la pantalla, el botón de encendido y apagado, los adaptadores de hardware y la secuencia de retirar el recipiente y devolver el carro para el siguiente pedido.
+El ciclo simulado se basa en el [diagrama de flujo](docs/Diagrama_flujo.png). Empieza con el carro en la estación de agua y termina tras un pedido. Vainilla, chocolate, 250 g de agua y 25 g de polvo son valores de prueba. El simulador incluye detección de recipiente y dosificación por ganancia de masa. La interfaz Tkinter delega la operación al Arduino mediante el protocolo de la máquina.
 
 ## División del código
 
-| Responsable propuesto | Archivos | Función |
+| Responsable propuesto | Archivos en `dosificadora/` | Función |
 |---|---|---|
-| Interfaz e integración | `interfaz.py`, `control.py`, `recetas.py` | Selección de sabor, estados del ciclo y objetivos de masa. |
-| Carro y sensores | `carro.py`, `sensores.py` | Entrada infrarroja del recipiente, sensores de estación y accionamiento del motor DC. |
-| Dosificación | `dosificacion.py` | Pulsos del sistema de agua, tornillo y agitador, con corte por masa y tiempo máximo. |
-| Pesaje | `pesaje.py` | Interfaz para lecturas estables en gramos. El adaptador real se encargará de calibración, estabilidad y lectura del HX711. |
-| Pruebas compartidas | `simulacion.py`, `tests/` | Simulación de los equipos, pedido completo y fallas reproducibles. |
-
-Los contratos de hardware reciben plazos en segundos. Cada adaptador real debe respetarlos y confirmar la finalización de sus operaciones. Antes de conectarlos, acuerden la posición inicial y de entrega, el mapa de entradas y salidas, los actuadores a cargo de cada placa y la reacción ante una pérdida de comunicación. Al incorporar una interfaz gráfica, el ciclo debe ejecutarse fuera del hilo de la pantalla.
+| Interfaz e integración | `interfaz_tk.py`, `interfaz.py` | Panel de Usuario y Admin, estados en pantalla y selección del modo al iniciar. |
+| Comunicación Arduino | `conexion_serial.py` | Puertos, conexión, reconexión e intercambio de líneas. |
+| Carro y sensores IR | `carro.py`, `sensores.py` | Comandos del carro, sensores IR de las estaciones y contratos de la simulación. |
+| Bomba | `sistema_agua.py` | Prueba manual e interpretación de los mensajes de la bomba. |
+| Ciclo simulado | `control.py`, `recetas.py`, `dosificacion.py`, `pesaje.py`, `simulacion.py` | Secuencia simulada, recetas, dosificación por pulsos, pesaje y fallas reproducibles. |
 
 ## Colaboración
 
