@@ -1,6 +1,5 @@
 from time import monotonic
 from typing import Protocol
-
 from .pesaje import Balanza, leer_masa_g
 from .recetas import Estacion
 
